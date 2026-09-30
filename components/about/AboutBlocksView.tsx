@@ -20,6 +20,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal"
 import useForm from "@/lib/forms/use-form"
 import { useToast } from "@/components/providers/toast-provider"
 import { aboutBlockSchema, type AboutBlockValues } from "@/lib/validation/schemas"
+import TechnologyIcon from "@/components/ui/TechnologyIcon"
 import type { AboutBlock, AboutProfile, TechStackGroup } from "@/types"
 
 type StackOption = Pick<TechStackGroup, "_id" | "techStack">
@@ -132,6 +133,11 @@ const BlockFormModal = ({
                         onChange={event => form.setValue("name", event.target.value)}
                     />
                 </Field>
+
+                <div className="admin-span-all">
+                    <TechnologyIcon name={form.values.name} preview />
+                    <p className="admin-cell__sub">Icons are matched automatically by technology name. No image upload needed.</p>
+                </div>
 
                 <Field label="Stack group" htmlFor="block-stack" required error={form.errors.techStack}>
                     <Select
