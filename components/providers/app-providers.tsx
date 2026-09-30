@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import {
     createContext,
     useCallback,
@@ -10,7 +9,8 @@ import {
     type ReactNode,
 } from "react"
 import useSWR, { SWRConfig } from "swr"
-import api, { swrFetcher } from "@/lib/api"
+import { auth, swrFetcher } from "@/lib/api"
+import { useToast } from "./toast-provider"
 import type { AdminUser } from "@/types"
 
 type AuthContextValue = {
@@ -47,18 +47,18 @@ const AuthProvider = ({
     user: AdminUser
     children: ReactNode
 }) => {
-    const router = useRouter()
+    const { error } = useToast()
     const [currentUser, setCurrentUser] = useState<AdminUser>(user)
 
     const logout = useCallback(async () => {
         try {
-            await api.post("auth/logout")
-        } finally {
-            window.localStorage.removeItem("portfolio-admin-theme")
-            router.replace("/login")
-            router.refresh()
+            await auth.logout()
+            // Reload after cookie removal to discard cached authenticated UI.
+            window.location.replace("/login")
+        } catch {
+            error("Could not sign out", "Please check your connection and try again.")
         }
-    }, [router])
+    }, [error])
 
     const updateUser = useCallback((next: AdminUser) => setCurrentUser(next), [])
 

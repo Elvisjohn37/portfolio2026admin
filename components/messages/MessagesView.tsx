@@ -82,8 +82,10 @@ const Row = ({
         <td>
             <Badge tone={toneOf(message.status)}>{message.status}</Badge>
         </td>
-        <td className="admin-cell__sub whitespace-nowrap" title={formatDateTime(message.createdAt)}>
-            {formatRelative(message.createdAt)}
+        <td className="whitespace-nowrap" title={formatDateTime(message.createdAt)}>
+            <span className="admin-cell__sub" style={{ marginTop: 0 }}>
+                {formatRelative(message.createdAt)}
+            </span>
         </td>
     </tr>
 )

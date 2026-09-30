@@ -954,7 +954,16 @@ body::after {
     min-width: 180px;
 }
 
+/* A horizontal toolbar's flex-basis must not become height in a column. */
+.admin-stack > .admin-search {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+}
+
 .admin-search__icon {
+    display: flex;
+    align-items: center;
     position: absolute;
     top: 50%;
     left: 0.75rem;

@@ -1,4 +1,5 @@
 import type { ApiEnvelope, Pagination, TeamMember, TeamRole } from "@/types"
+import type { ChangePasswordValues } from "@/lib/validation/schemas"
 
 /** Thrown by every request helper; carries field errors from yup on the API. */
 export class ApiError extends Error {
@@ -156,18 +157,17 @@ export type AccountProfilePayload = {
     isActive: boolean
 }
 
-export type ChangePasswordPayload = {
-    currentPassword: string
-    password: string
-    passwordConfirmation: string
-}
+export type ChangePasswordPayload = ChangePasswordValues & Record<string, never>
 
 /** Both endpoints answer with the fresh account so the shell can refresh itself. */
 const account = {
     updateProfile: (body: AccountProfilePayload) =>
         api.put<{ user: TeamMember }>("auth/profile", body),
-    changePassword: (body: ChangePasswordPayload) =>
-        api.put<{ user: TeamMember }>("auth/password", body),
+    changePassword: (body: {
+        currentPassword: string
+        password: string
+        passwordConfirmation: string
+    }) => api.put<{ user: TeamMember }>("auth/password", body),
 }
 
 export { account }

@@ -4,8 +4,8 @@ import { TOKEN_COOKIE } from "@/lib/constants"
 /**
  * Cheap gate: it only checks that a session cookie exists (never the database).
  * Real verification happens in `lib/session.ts` on every server render and in
- * the API itself, so a stale cookie simply results in a redirect loop back to
- * the sign-in screen rather than a privileged page.
+ * the API itself. The login page verifies cookies before redirecting so stale
+ * sessions can return to the sign-in form without a redirect loop.
  */
 const middleware = (request: NextRequest) => {
     const { pathname, search } = request.nextUrl
@@ -19,9 +19,8 @@ const middleware = (request: NextRequest) => {
         return NextResponse.redirect(url)
     }
 
-    if ((pathname === "/" || pathname === "/login") && hasSession) {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
-    }
+    // LoginPage verifies the session before redirecting. Cookie presence alone
+    // would bounce expired sessions between /login and /dashboard forever.
 
     return NextResponse.next()
 }
