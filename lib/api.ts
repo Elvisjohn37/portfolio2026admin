@@ -99,8 +99,9 @@ export { api, swrFetcher, request }
 /**
  * Uploads a single image chosen from the device to the API through the Next
  * BFF route (`POST /api/media`). The route streams the bytes to Express, which
- * stores them and answers with the public media path; the BFF returns the
- * absolute URL that belongs in the project document.
+ * stores them and answers with the public media path; the BFF returns that
+ * environment-independent `/api/media/<id>` path, which is what belongs in the
+ * project document.
  */
 const uploadImage = async (file: File): Promise<string> => {
     let response: Response
@@ -118,22 +119,22 @@ const uploadImage = async (file: File): Promise<string> => {
     }
 
     const raw = await response.text()
-    let payload: ApiEnvelope<{ url: string }> | null = null
+    let payload: ApiEnvelope<{ path: string }> | null = null
 
     try {
-        payload = raw ? (JSON.parse(raw) as ApiEnvelope<{ url: string }>) : null
+        payload = raw ? (JSON.parse(raw) as ApiEnvelope<{ path: string }>) : null
     } catch {
         payload = null
     }
 
-    if (!response.ok || !payload?.success || !payload.data?.url) {
+    if (!response.ok || !payload?.success || !payload.data?.path) {
         throw new ApiError(
             payload?.message || `Image upload failed with status ${response.status}`,
             response.status,
         )
     }
 
-    return payload.data.url
+    return payload.data.path
 }
 
 export { uploadImage }

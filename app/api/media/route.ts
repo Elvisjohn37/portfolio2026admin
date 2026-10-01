@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
         const payload = await response.json().catch(() => null)
         if (!response.ok) return fail(response.status, payload?.message ?? "Image upload failed. Please retry.")
         if (!/^\/api\/media\/[a-f0-9]{24}$/i.test(payload?.data?.path ?? "")) return fail(502, "Invalid upload response")
-        return NextResponse.json({ success: true, data: { url: new URL(payload.data.path, API_URL).href } }, { status: 201 })
+        // The project document stores this relative path, never an absolute URL.
+        // Baking the origin in here would tie every upload to whichever API the
+        // admin was pointed at, so images uploaded on localhost would 404 for
+        // visitors of the deployed portfolio. Each app resolves the path against
+        // the API it actually talks to (see `app/utils/js/media.ts`).
+        return NextResponse.json({ success: true, data: { path: payload.data.path } }, { status: 201 })
     } catch { return fail(502, "Image upload failed. Please retry.") }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { portfolioMediaUrl } from "@/lib/portfolio-url"
+import { mediaUrl } from "@/lib/portfolio-url"
 import Button from "@/components/ui/Button"
 
 export type SelectedImage = { file?: File; url?: string; name: string }
@@ -14,7 +14,7 @@ function Preview({ image }: { image: SelectedImage }) {
         setLocalUrl(url)
         return () => URL.revokeObjectURL(url)
     }, [image.file])
-    const src = image.file ? localUrl : portfolioMediaUrl(image.url ?? "")
+    const src = image.file ? localUrl : mediaUrl(image.url ?? "")
     // eslint-disable-next-line @next/next/no-img-element
     return src ? <img src={src} alt={image.name} width={140} height={90} style={{ width: "100%", height: 90, objectFit: "contain", borderRadius: 8 }} /> : null
 }
