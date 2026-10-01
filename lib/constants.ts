@@ -9,8 +9,7 @@ export const API_URL =
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
 /** Public portfolio, linked from the sidebar. */
-export const PORTFOLIO_URL =
-    process.env.NEXT_PUBLIC_PORTFOLIO_URL ?? "http://localhost:3000"
+export { PORTFOLIO_URL } from "./portfolio-url"
 
 /** Kept in sync with JWT_EXPIRES_IN on the API. */
 export const SESSION_MAX_AGE_SECONDS = Number(process.env.SESSION_MAX_AGE_SECONDS ?? 86400)

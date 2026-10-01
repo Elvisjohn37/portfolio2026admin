@@ -1,4 +1,5 @@
 "use client"
+import { portfolioMediaUrl } from "@/lib/portfolio-url"
 
 import { useCallback, useEffect, useState } from "react"
 import useList from "@/lib/use-list"
@@ -190,7 +191,7 @@ const ProjectsView = ({ editId }: { editId?: string }) => {
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         className="admin-thumb"
-                                                        src={project.thumbnail}
+                                                        src={portfolioMediaUrl(project.thumbnail)}
                                                         alt=""
                                                     />
                                                 ) : (

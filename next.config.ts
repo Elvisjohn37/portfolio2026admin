@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import { PORTFOLIO_URL } from "./lib/portfolio-url"
 
 /**
  * Where the public portfolio (which owns `public/projects/*` media) is served.
@@ -6,8 +7,6 @@ import type { NextConfig } from "next"
  * (`/projects/…`) and resolved by the portfolio site, so the admin proxies
  * them through instead of duplicating the files.
  */
-const PORTFOLIO_URL =
-    process.env.NEXT_PUBLIC_PORTFOLIO_URL ?? "http://localhost:3000"
 
 const nextConfig: NextConfig = {
     reactStrictMode: false,

@@ -4,21 +4,25 @@ import { useState } from "react"
 import useSWR from "swr"
 
 const CDN = "https://cdn.jsdelivr.net/gh/devicons/devicon@latest"
-const AI_CATALOG = "https://unpkg.com/@lobehub/icons-static-svg@latest/icons/?meta"
+const AI_CATALOG = "https://data.jsdelivr.com/v1/package/resolve/npm/@lobehub/icons-static-svg@latest"
 type AiEntry = { title: string; url: string; monochrome: boolean }
 const loadAiCatalog = async (url: string): Promise<AiEntry[]> => {
     const response = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!response.ok) throw new Error("AI catalog unavailable")
-    const data = await response.json()
-    if (!Array.isArray(data.files) || !/^\d+\.\d+\.\d+/.test(data.version)) throw new Error("Invalid AI catalog")
-    const paths = new Set<string>(data.files.map((file: { path: string }) => file.path)
+    const { version } = await response.json()
+    if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) throw new Error("Invalid AI catalog version")
+    const catalogResponse = await fetch(`https://data.jsdelivr.com/v1/package/npm/@lobehub/icons-static-svg@${version}/flat`, { signal: AbortSignal.timeout(10000) })
+    if (!catalogResponse.ok) throw new Error("AI catalog unavailable")
+    const data = await catalogResponse.json()
+    if (!Array.isArray(data.files)) throw new Error("Invalid AI catalog")
+    const paths = new Set<string>(data.files.map((file: { name: string }) => file.name)
         .filter((path: unknown): path is string => typeof path === "string" && /^\/icons\/[a-z0-9-]+\.svg$/.test(path)))
     return [...paths].filter((path) => !/-(color|text|brand|wordmark)\.svg$/.test(path)).map((path) => {
         const colorPath = path.replace(/\.svg$/, "-color.svg")
         const colored = paths.has(colorPath)
         return {
             title: path.slice(7, -4),
-            url: `https://unpkg.com/@lobehub/icons-static-svg@${encodeURIComponent(data.version)}${colored ? colorPath : path}`,
+            url: `https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@${version}${colored ? colorPath : path}`,
             monochrome: !colored,
         }
     })
