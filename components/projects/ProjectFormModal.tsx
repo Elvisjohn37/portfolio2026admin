@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Modal from "@/components/ui/Modal"
 import Button from "@/components/ui/Button"
 import { Field, FormAlert, SwitchField, TextInput, Textarea } from "@/components/ui/Field"
 import TagInput from "@/components/ui/TagInput"
+import ProjectImagePicker, { type SelectedImage } from "@/components/projects/ProjectImagePicker"
 import useForm from "@/lib/forms/use-form"
-import api from "@/lib/api"
+import api, { uploadImage } from "@/lib/api"
 import { useToast } from "@/components/providers/toast-provider"
 import { projectSchema, type ProjectValues } from "@/lib/validation/schemas"
 import { slugify } from "@/lib/format"
@@ -44,6 +45,23 @@ const toValues = (project: Project): ProjectValues => ({
     order: project.order ?? 0,
 })
 
+/** Human-friendly file name for an already-saved image (derived from its URL). */
+const nameFromUrl = (value: string, fallback: string) => {
+    const last = value.split("?")[0].split("/").filter(Boolean).pop()
+    if (!last) return fallback
+    try {
+        return decodeURIComponent(last) || fallback
+    } catch {
+        return last
+    }
+}
+
+const toImage = (url?: string, fallback = "image"): SelectedImage[] =>
+    url ? [{ url, name: nameFromUrl(url, fallback) }] : []
+
+const toGallery = (urls: string[] = []): SelectedImage[] =>
+    urls.map((url, index) => ({ url, name: nameFromUrl(url, `image-${index + 1}`) }))
+
 type ProjectFormModalProps = {
     open: boolean
     project: Project | null
@@ -55,18 +73,42 @@ const ProjectFormModal = ({ open, project, onClose, onSaved }: ProjectFormModalP
     const toast = useToast()
     const isEditing = Boolean(project)
 
+    // Device-picked images live outside the yup values (they hold `File`s).
+    // On save they are uploaded and turned into the stored media URLs.
+    const [logo, setLogo] = useState<SelectedImage[]>([])
+    const [thumbnail, setThumbnail] = useState<SelectedImage[]>([])
+    const [gallery, setGallery] = useState<SelectedImage[]>([])
+
     const form = useForm<ProjectValues>({
         initialValues: project ? toValues(project) : EMPTY,
         validationSchema: projectSchema,
         onSubmit: async values => {
+            // Upload every freshly chosen file first, then persist the URLs.
+            const resolve = (image: SelectedImage) =>
+                image.file ? uploadImage(image.file) : Promise.resolve(image.url ?? "")
+
+            const [logoUrl = ""] = await Promise.all(logo.map(resolve))
+            const [thumbnailUrl = ""] = await Promise.all(thumbnail.map(resolve))
+            const images = await Promise.all(gallery.map(resolve))
+
+            const payload: ProjectValues = {
+                ...values,
+                logoSrc: logoUrl,
+                thumbnail: thumbnailUrl,
+                images,
+            }
+
             if (project) {
-                await api.put(`projects/${project._id}`, values)
+                await api.put(`projects/${project._id}`, payload)
             } else {
-                await api.post("projects", values)
+                await api.post("projects", payload)
             }
 
             toast.success(project ? "Project updated" : "Project created", values.name)
             form.reset()
+            setLogo([])
+            setThumbnail([])
+            setGallery([])
             onSaved()
             onClose()
         },
@@ -74,7 +116,11 @@ const ProjectFormModal = ({ open, project, onClose, onSaved }: ProjectFormModalP
 
     // Reload the draft whenever a different row (or the "new" button) is opened.
     useEffect(() => {
-        form.reset(project ? toValues(project) : EMPTY)
+        const next = project ? toValues(project) : EMPTY
+        form.reset(next)
+        setLogo(toImage(next.logoSrc, "logo"))
+        setThumbnail(toImage(next.thumbnail, "thumbnail"))
+        setGallery(toGallery(next.images))
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [project, open])
 
@@ -156,46 +202,33 @@ const ProjectFormModal = ({ open, project, onClose, onSaved }: ProjectFormModalP
                     />
                 </Field>
 
-                <Field label="Logo URL" htmlFor="logoSrc" error={form.errors.logoSrc}>
-                    <TextInput
-                        id="logoSrc"
-                        value={form.values.logoSrc}
-                        invalid={Boolean(form.errors.logoSrc)}
-                        placeholder="https://…/logo.svg"
-                        onChange={event => form.setValue("logoSrc", event.target.value)}
+                <div className="admin-span-all">
+                    <ProjectImagePicker
+                        label="Logo"
+                        images={logo}
+                        disabled={form.isSubmitting}
+                        onChange={setLogo}
                     />
-                </Field>
+                </div>
 
-                <Field
-                    label="Thumbnail URL"
-                    htmlFor="thumbnail"
-                    error={form.errors.thumbnail}
-                    className="admin-span-all"
-                >
-                    <TextInput
-                        id="thumbnail"
-                        value={form.values.thumbnail}
-                        invalid={Boolean(form.errors.thumbnail)}
-                        placeholder="https://…/cover.jpg"
-                        onChange={event => form.setValue("thumbnail", event.target.value)}
+                <div className="admin-span-all">
+                    <ProjectImagePicker
+                        label="Thumbnail"
+                        images={thumbnail}
+                        disabled={form.isSubmitting}
+                        onChange={setThumbnail}
                     />
-                </Field>
+                </div>
 
-                <Field
-                    label="Gallery images"
-                    htmlFor="images"
-                    error={form.errors.images}
-                    hint="Press Enter after each image URL"
-                    className="admin-span-all"
-                >
-                    <TagInput
-                        id="images"
-                        value={form.values.images}
-                        placeholder="https://…/screenshot.jpg"
-                        invalid={Boolean(form.errors.images)}
-                        onChange={value => form.setValue("images", value)}
+                <div className="admin-span-all">
+                    <ProjectImagePicker
+                        label="Gallery images"
+                        images={gallery}
+                        multiple
+                        disabled={form.isSubmitting}
+                        onChange={setGallery}
                     />
-                </Field>
+                </div>
 
                 <Field
                     label="Detailed info"

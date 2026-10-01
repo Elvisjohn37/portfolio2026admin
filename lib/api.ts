@@ -97,6 +97,48 @@ const swrFetcher = <T>([path, query]: [string, RequestOptions["query"]?]) =>
 export { api, swrFetcher, request }
 
 /**
+ * Uploads a single image chosen from the device to the API through the Next
+ * BFF route (`POST /api/media`). The route streams the bytes to Express, which
+ * stores them and answers with the public media path; the BFF returns the
+ * absolute URL that belongs in the project document.
+ */
+const uploadImage = async (file: File): Promise<string> => {
+    let response: Response
+
+    try {
+        response = await fetch("/api/media", {
+            method: "POST",
+            // Raw bytes (not multipart/JSON) - see `app/api/media/route.ts`.
+            headers: { "Content-Type": "application/octet-stream" },
+            body: file,
+            cache: "no-store",
+        })
+    } catch {
+        throw new ApiError("Network error while uploading the image", 0)
+    }
+
+    const raw = await response.text()
+    let payload: ApiEnvelope<{ url: string }> | null = null
+
+    try {
+        payload = raw ? (JSON.parse(raw) as ApiEnvelope<{ url: string }>) : null
+    } catch {
+        payload = null
+    }
+
+    if (!response.ok || !payload?.success || !payload.data?.url) {
+        throw new ApiError(
+            payload?.message || `Image upload failed with status ${response.status}`,
+            response.status,
+        )
+    }
+
+    return payload.data.url
+}
+
+export { uploadImage }
+
+/**
  * Endpoints handled by the Next.js server itself (they set/clear the httpOnly
  * cookie), so they bypass the `/api/proxy` prefix.
  */
